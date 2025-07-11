@@ -101,12 +101,7 @@ button:hover .btn-hvr {
 }
 
 
-lottie-player{
+#player{
   width: 680px;
       height: auto;
 }
-/* 
-
-.lottie-wrap{
-  transition: all 0.5s linear;
-} */

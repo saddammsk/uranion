@@ -1,24 +1,37 @@
+
+
+
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
-import "@lottiefiles/lottie-player";
+import Lottie, { type LottieRefCurrentProps } from 'lottie-react';
+import animationData from '../../public/lotties/lottie-animation.json';
 
 gsap.registerPlugin(ScrollTrigger);
 
+interface AnimationSection {
+  id: string;
+  from: number;
+  to: number;
+  style: {
+    left: string;
+    top: string;
+    zoom?: string;
+  };
+}
+
 export const LottieScroll = () => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const playerRef = useRef<any>(null);
+  const lottieRef = useRef<LottieRefCurrentProps>(null);
 
   useEffect(() => {
-    const playerEl = playerRef.current;
     const container = containerRef.current;
-    if (!playerEl || !container) return;
+    if (!container || !lottieRef.current) return;
 
     const mm = gsap.matchMedia();
 
-    const setup = (context: any) => {
-      let lottieInstance: any;
-      let sections:any;
+    const setup = (context: { conditions?: { isDesktop?: boolean; isTablet?: boolean } }) => {
+      let sections: AnimationSection[];
 
       if (context.conditions?.isDesktop) {
         sections = [
@@ -40,62 +53,61 @@ export const LottieScroll = () => {
         // Mobile
         sections = [
           { id: "home", from: 0, to: 0, style: { left: "150vw", top: "0%", zoom: "0.4" } },
-          { id: "experties", from: 60, to: 60, style: { left: "140vw", top: "30%" , zoom: "0.4" } },
+          { id: "experties", from: 60, to: 60, style: { left: "140vw", top: "30%", zoom: "0.4" } },
           { id: "technology", from: 120, to: 120, style: { left: "140vw", top: "25%", zoom: "0.4" } },
           { id: "challenges", from: 180, to: 180, style: { left: "100vw", top: "40%", zoom: "0.4" } },
           { id: "contact", from: 240, to: 300, style: { left: "140vw", top: "30%", zoom: "0.4" } },
         ];
       }
 
-      const onReady = () => {
-        lottieInstance = playerEl.getLottie();
-        lottieInstance.stop();
-        gsap.set(container, sections[0].style);
+      // Initialize animation
+      lottieRef.current?.goToAndStop(sections[0].from, true);
+      gsap.set(container, sections[0].style);
 
-        sections.forEach((section:any, index:number) => {
-          const el = document.getElementById(section.id);
-          const nextSection = sections[index + 1];
-          if (!el || !nextSection) return;
+      sections.forEach((section, index) => {
+        const el = document.getElementById(section.id);
+        const nextSection = sections[index + 1];
+        if (!el || !nextSection) return;
 
-          const frameObj = { frame: section.from };
+        const frameObj = { frame: section.from };
 
-          const tl = gsap.timeline({
-            scrollTrigger: {
-              trigger: el,
-              start: "top top",
-              end: "bottom top",
-              scrub: 0.7,
-              onLeave: () => {
-                lottieInstance.goToAndStop(nextSection.from, true);
-                gsap.set(container, nextSection.style);
-              },
-              onLeaveBack: () => {
-                lottieInstance.goToAndStop(section.from, true);
-                gsap.set(container, section.style);
-              },
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: el,
+            start: "top top",
+            end: "bottom top",
+            scrub: 0.7,
+            onLeave: () => {
+              lottieRef.current?.goToAndStop(nextSection.from, true);
+              gsap.set(container, nextSection.style);
             },
-          });
-
-          tl.to(frameObj, {
-            frame: nextSection.from,
-            ease: "none",
-            onUpdate: () => {
-              lottieInstance.goToAndStop(frameObj.frame, true);
+            onLeaveBack: () => {
+              lottieRef.current?.goToAndStop(section.from, true);
+              gsap.set(container, section.style);
             },
-          })
-            .to(container, {
-              left: nextSection.style.left,
-              top: nextSection.style.top,
-              ease: "none",
-            }, 0)
-            .to({}, { duration: 0.3 });
+          },
         });
-      };
 
-      playerEl.addEventListener("ready", onReady);
+        tl.to(frameObj, {
+          frame: nextSection.from,
+          ease: "none",
+          onUpdate: () => {
+            lottieRef.current?.goToAndStop(frameObj.frame, true);
+          },
+        }).to(
+          container,
+          {
+            left: nextSection.style.left,
+            top: nextSection.style.top,
+            ease: "none",
+          },
+          0
+        )
+        .to({}, { duration: 0.3 });
+        ;
+      });
 
       return () => {
-        playerEl.removeEventListener("ready", onReady);
         ScrollTrigger.getAll().forEach((t) => t.kill());
       };
     };
@@ -112,7 +124,7 @@ export const LottieScroll = () => {
     return () => {
       mm.revert();
     };
-  }, []); // keep empty to only set up once, matchMedia will handle changes
+  }, []);
 
   return (
     <div
@@ -124,12 +136,12 @@ export const LottieScroll = () => {
         pointerEvents: "none",
       }}
     >
-      <lottie-player
-        ref={playerRef}
-        id="player"
-        src="https://lottie.host/a39ee86f-0a72-4e42-97af-7bb0fc35d78d/CjNb7XqNEf.json"
-        background="transparent"
-        speed="1"
+      <Lottie
+      id="player"
+        lottieRef={lottieRef}
+        animationData={animationData}
+        autoplay={false}
+        loop={false}
       />
     </div>
   );
